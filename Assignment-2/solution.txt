@@ -1,46 +1,36 @@
-with booking_count AS(
-  select hotel.city_id,
-  hotel.id as hotel_id,
-  count(booking.id) as no_of_booking
-  from hotel 
-  join booking on hotel.id = booking.hotel_id
-  group by hotel.city_id,hotel.id
-),
- last_booking AS(
-  Select hotel.city_id,
-  MAX(booking.booking_date) as last_booking
+with last_booking AS(
+  Select hotel.city_id, MAX(booking.booking_date) as last_booking
   FROM booking
   JOIN hotel on hotel.id = booking.hotel_id
   GROUP BY hotel.city_id 
 ),
+booking_count AS(
+  select hotel.city_id, hotel.id as hotel_id, count(booking.id) as no_of_booking
+  from hotel 
+  join booking on hotel.id = booking.hotel_id
+  group by hotel.city_id,hotel.id
+),
 max_booking AS(
-   SELECT city_id,
-   MAX(cnt_b.no_of_booking) as max_booking
-   From booking_count cnt_b
+   SELECT city_id, MAX(cnt_book.no_of_booking) as max_booking
+   From booking_count cnt_book
    GROUP BY city_id
 ),
 most_booked AS(
-  SELECT cnt_b.city_id,
-  cnt_b.hotel_id as hotel_id,
-  cnt_b.no_of_booking
-  From booking_count cnt_b
-  JOIN max_booking max_b ON max_b.city_id = cnt_b.city_id
-  AND cnt_b.no_of_booking = max_b.max_booking
+  SELECT cnt_book.city_id, cnt_book.hotel_id as hotel_id, cnt_book.no_of_booking
+  From booking_count cnt_book
+  JOIN max_booking max_book ON max_book.city_id = cnt_book.city_id
+  AND cnt_book.no_of_booking = max_book.max_booking
 ),
 photo AS(
-  SELECT hotel.id as hotel_id,
-  (hotel.photos->>0) as photo 
+  SELECT hotel.id as hotel_id, (hotel.photos->>0) as photo 
   FROM hotel
 ),
 result AS(
-  SELECT city.name,
-  last_b.last_booking,
-  most_b.hotel_id,
-  Photo.photo
-  FROM most_booked most_b
-  JOIN city  on most_b.city_id = city.id
-  JOIN last_booking last_b on city.id = last_b.city_id
-  JOIN Photo ON most_b.hotel_id = Photo.hotel_id
+  SELECT city.name, last_book.last_booking, most_book.hotel_id, Photo.photo
+  FROM most_booked most_book
+  JOIN city  on most_book.city_id = city.id
+  JOIN last_booking last_book on city.id = last_book.city_id
+  JOIN Photo ON most_book.hotel_id = Photo.hotel_id
  )
  
 SELECT * from result ORDER BY name,hotel_id;
